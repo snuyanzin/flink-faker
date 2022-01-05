@@ -19,7 +19,9 @@ class FlinkFakerSourceFunctionTest {
     LogicalType[] types = {new VarCharType(255), new VarCharType(Integer.MAX_VALUE)};
     FlinkFakerSourceFunction flinkFakerSourceFunction =
         new FlinkFakerSourceFunction(
-            fieldExpressions, neverNull(2), getArrayOfOnes(2), types, 100, 10);
+            TestUtils.constructFieldInfos(fieldExpressions, types, neverNull(2), getArrayOfOnes(2)),
+            100,
+            10);
     flinkFakerSourceFunction.open(new Configuration());
 
     assertThat(flinkFakerSourceFunction.generateNextRow().getArity()).isEqualTo(2);
@@ -39,7 +41,9 @@ class FlinkFakerSourceFunctionTest {
     };
     FlinkFakerSourceFunction flinkFakerSourceFunction =
         new FlinkFakerSourceFunction(
-            fieldExpressions, neverNull(3), getArrayOfOnes(3), types, 100, 10);
+            TestUtils.constructFieldInfos(fieldExpressions, types, neverNull(3), getArrayOfOnes(3)),
+            100,
+            10);
     flinkFakerSourceFunction.open(new Configuration());
 
     RowData rowData = flinkFakerSourceFunction.generateNextRow();
@@ -54,16 +58,16 @@ class FlinkFakerSourceFunctionTest {
 
     FlinkFakerSourceFunction flinkFakerSourceFunction =
         new FlinkFakerSourceFunction(
-            EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES,
-            neverNull(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length),
-            getArrayOfOnes(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length),
-            ALL_SUPPORTED_DATA_TYPES,
+            TestUtils.constructFieldInfos(
+                EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES,
+                ALL_SUPPORTED_DATA_TYPES,
+                neverNull(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length),
+                getArrayOfOnes(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length)),
             100,
             10);
     flinkFakerSourceFunction.open(new Configuration());
 
     RowData rowData = flinkFakerSourceFunction.generateNextRow();
-    System.out.println(rowData);
     assertThat(rowData.getArity()).isEqualTo(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length);
     for (int i = 0; i < EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length; i++) {
       assertThat(rowData.isNullAt(i)).isFalse();
@@ -75,10 +79,11 @@ class FlinkFakerSourceFunctionTest {
 
     FlinkFakerSourceFunction flinkFakerSourceFunction =
         new FlinkFakerSourceFunction(
-            EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES,
-            alwaysNull(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length),
-            getArrayOfOnes(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length),
-            ALL_SUPPORTED_DATA_TYPES,
+            TestUtils.constructFieldInfos(
+                EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES,
+                ALL_SUPPORTED_DATA_TYPES,
+                alwaysNull(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length),
+                getArrayOfOnes(EXPRESSIONS_FOR_ALL_SUPPORTED_DATATYPES.length)),
             100,
             10);
     flinkFakerSourceFunction.open(new Configuration());

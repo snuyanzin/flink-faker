@@ -4,37 +4,25 @@ import static com.github.knaufk.flink.faker.FlinkFakerTableSourceFactory.UNLIMIT
 
 import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.ChangelogMode;
-import org.apache.flink.table.connector.source.*;
+import org.apache.flink.table.connector.source.DynamicTableSource;
+import org.apache.flink.table.connector.source.LookupTableSource;
+import org.apache.flink.table.connector.source.ScanTableSource;
+import org.apache.flink.table.connector.source.SourceFunctionProvider;
+import org.apache.flink.table.connector.source.TableFunctionProvider;
 import org.apache.flink.table.connector.source.abilities.SupportsLimitPushDown;
-import org.apache.flink.table.types.DataType;
-import org.apache.flink.table.types.logical.LogicalType;
 
 public class FlinkFakerTableSource
     implements ScanTableSource, LookupTableSource, SupportsLimitPushDown {
 
-  private String[][] fieldExpressions;
-  private Float[] fieldNullRates;
-  private Integer[] fieldCollectionLengths;
+  private final FieldInfo[] fieldInfos;
   private ResolvedSchema schema;
-  private final LogicalType[] types;
   private long rowsPerSecond;
   private long numberOfRows;
 
   public FlinkFakerTableSource(
-      String[][] fieldExpressions,
-      Float[] fieldNullRates,
-      Integer[] fieldCollectionLengths,
-      ResolvedSchema schema,
-      long rowsPerSecond,
-      long numberOfRows) {
-    this.fieldExpressions = fieldExpressions;
-    this.fieldNullRates = fieldNullRates;
-    this.fieldCollectionLengths = fieldCollectionLengths;
+      FieldInfo[] fieldInfos, ResolvedSchema schema, long rowsPerSecond, long numberOfRows) {
+    this.fieldInfos = fieldInfos;
     this.schema = schema;
-    types =
-        schema.getColumnDataTypes().stream()
-            .map(DataType::getLogicalType)
-            .toArray(LogicalType[]::new);
     this.rowsPerSecond = rowsPerSecond;
     this.numberOfRows = numberOfRows;
   }
@@ -48,25 +36,12 @@ public class FlinkFakerTableSource
   public ScanRuntimeProvider getScanRuntimeProvider(final ScanContext scanContext) {
     boolean isBounded = numberOfRows != UNLIMITED_ROWS;
     return SourceFunctionProvider.of(
-        new FlinkFakerSourceFunction(
-            fieldExpressions,
-            fieldNullRates,
-            fieldCollectionLengths,
-            types,
-            rowsPerSecond,
-            numberOfRows),
-        isBounded);
+        new FlinkFakerSourceFunction(fieldInfos, rowsPerSecond, numberOfRows), isBounded);
   }
 
   @Override
   public DynamicTableSource copy() {
-    return new FlinkFakerTableSource(
-        fieldExpressions,
-        fieldNullRates,
-        fieldCollectionLengths,
-        schema,
-        rowsPerSecond,
-        numberOfRows);
+    return new FlinkFakerTableSource(fieldInfos, schema, rowsPerSecond, numberOfRows);
   }
 
   @Override
@@ -76,9 +51,7 @@ public class FlinkFakerTableSource
 
   @Override
   public LookupRuntimeProvider getLookupRuntimeProvider(LookupContext context) {
-    return TableFunctionProvider.of(
-        new FlinkFakerLookupFunction(
-            fieldExpressions, fieldNullRates, fieldCollectionLengths, types, context.getKeys()));
+    return TableFunctionProvider.of(new FlinkFakerLookupFunction(fieldInfos, context.getKeys()));
   }
 
   @Override
