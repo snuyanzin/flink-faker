@@ -194,4 +194,31 @@ public class FlinkFakerIntegrationTest {
     List<Row> rows = CollectionUtil.iteratorToList(table.execute().collect());
     assertThat(rows.size()).isEqualTo(10);
   }
+
+  @Test
+  public void testTime() throws Exception {
+
+    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+    env.setParallelism(8);
+    StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
+
+    tEnv.executeSql(
+        "CREATE TEMPORARY TABLE faker_table (\n"
+            + "	f0 TIME\n"
+            + ") WITH (\n"
+            + "	'connector' = 'faker',\n"
+            + "	'fields.f0.expression' = '#{time.past ''15'',''HOURS''}',\n"
+            + " 'number-of-rows' = '100'\n"
+            + ")");
+
+    final Table table = tEnv.sqlQuery("SELECT * FROM faker_table LIMIT 10");
+    String[] explain = table.explain().split("==.*==\\s+");
+    assertThat(explain).hasSize(4);
+    assertThat(explain[2])
+        .contains(
+            "table=[[default_catalog, default_database, faker_table, limit=[10]]], fields=[f0]");
+
+    List<Row> rows = CollectionUtil.iteratorToList(table.execute().collect());
+    assertThat(rows.size()).isEqualTo(10);
+  }
 }
